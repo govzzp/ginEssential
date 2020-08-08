@@ -2,7 +2,9 @@ package controller
 
 import (
 	"ginEsseential/common"
+	"ginEsseential/dto"
 	"ginEsseential/model"
+	"ginEsseential/response"
 	"ginEsseential/util"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -18,17 +20,19 @@ func Login(c *gin.Context)  {
 	password := c.PostForm("password")
 	//数据验证
 	if len(telephone) != 11 {
-		c.JSON(http.StatusUnprocessableEntity,gin.H{
-			"code":422,
-			"message":"Telephone number must be 11 numbers",
-		})
+		response.Response(c,http.StatusUnprocessableEntity,422,nil,"Telephone number must be 11 numbers")
+		//c.JSON(http.StatusUnprocessableEntity,gin.H{
+		//	"code":422,
+		//	"message":"Telephone number must be 11 numbers",
+		//})
 		return
 	}
 	if len(password) <=6 {
-		c.JSON(http.StatusUnprocessableEntity,gin.H{
-			"code":422,
-			"message":"Password must more than 6 words",
-		})
+		response.Response(c,http.StatusUnprocessableEntity,422,nil,"Password must more than 6 words")
+		//c.JSON(http.StatusUnprocessableEntity,gin.H{
+		//	"code":422,
+		//	"message":"Password must more than 6 words",
+		//})
 		return
 	}
 
@@ -36,17 +40,19 @@ func Login(c *gin.Context)  {
 	var user model.User_info
 	db.Where("telephone = ?",telephone).First(&user)
 	if user.ID == 0 {
-		c.JSON(http.StatusUnprocessableEntity,gin.H{
-			"code":422,
-			"message":"Unknown User",
-		})
+		response.Response(c,http.StatusUnprocessableEntity,422,nil,"Unknown User")
+		//c.JSON(http.StatusUnprocessableEntity,gin.H{
+		//	"code":422,
+		//	"message":"Unknown User",
+		//})
 	}
 	//判断密码是否正确
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password),[]byte(password));err != nil{
-		c.JSON(http.StatusBadRequest,gin.H{
-			"code":400,
-			"message":"密码错误",
-		})
+		response.Response(c,http.StatusBadRequest,400,nil,"密码错误")
+		//c.JSON(http.StatusBadRequest,gin.H{
+		//	"code":400,
+		//	"message":"密码错误",
+		//})
 		return
 	}
 
@@ -54,19 +60,21 @@ func Login(c *gin.Context)  {
 	//发放token
 	token ,err :=common.ReleaseToken(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError,gin.H{
-			"code":500,
-			"msg":"server error",
-			//log.Printf("toker gernerate error : %v",err)
-		})
+		response.Response(c,http.StatusInternalServerError,500,nil,"server error")
+		//c.JSON(http.StatusInternalServerError,gin.H{
+		//	"code":500,
+		//	"msg":"server error",
+		//	//log.Printf("toker gernerate error : %v",err)
+		//})
 		return
 	}
 	//返回结果
-	c.JSON(http.StatusOK,gin.H{
-		"code":200,
-		"token":token,
-		"message":"登录成功",
-	})
+	//c.JSON(http.StatusOK,gin.H{
+	//	"code":200,
+	//	"data":gin.H{"token":token},
+	//	"message":"登录成功",
+	//}
+	response.Success(c,gin.H{"token":token},"登录成功")
 }
 func Register(c *gin.Context) {
 	db := common.Getdb()
@@ -76,36 +84,40 @@ func Register(c *gin.Context) {
 	password := c.PostForm("password")
 	//验证数据
 	if len(telephone) != 11 {
-		c.JSON(http.StatusUnprocessableEntity,gin.H{
-			"code":422,
-			"message":"Telephone number must be 11 numbers",
-		})
+		//c.JSON(http.StatusUnprocessableEntity,gin.H{
+		//	"code":422,
+		//	"message":"Telephone number must be 11 numbers",
+		//})
+		response.Response(c,http.StatusUnprocessableEntity,422,nil,"Telephone number must be 11 numbers")
 		return
 	}
 	if len(password) <=6 {
-		c.JSON(http.StatusUnprocessableEntity,gin.H{
-			"code":422,
-			"message":"Password must more than 6 words",
-		})
+		//c.JSON(http.StatusUnprocessableEntity,gin.H{
+		//	"code":422,
+		//	"message":"Password must more than 6 words",
+		//})
+		response.Response(c,http.StatusUnprocessableEntity,422,nil,"Password must more than 6 words")
 		return
 	}
 	if len(name) == 0 {
 		name = util.RandomString(10)
 	}
 	if isTelephoneExist(db,telephone) {
-		c.JSON(http.StatusUnprocessableEntity,gin.H{
-			"code":422,
-			"message":"User is Already exist Please login",
-		})
+		//c.JSON(http.StatusUnprocessableEntity,gin.H{
+		//	"code":422,
+		//	"message":"User is Already exist Please login",
+		//})
+		response.Response(c,http.StatusUnprocessableEntity,422,nil,"User is Already exist Please login")
 		return
 	}
 
 	hasedPassword ,err := bcrypt.GenerateFromPassword([]byte(password),bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError,gin.H{
-			"code":500,
-			"message":"Internal Server Error",
-		})
+		//c.JSON(http.StatusInternalServerError,gin.H{
+		//	"code":500,
+		//	"message":"Internal Server Error",
+		//})
+		response.Response(c,http.StatusInternalServerError,500,nil,"Internal Server Error")
 	}
 	newUser:=model.User_info{
 		Name: name,
@@ -114,10 +126,11 @@ func Register(c *gin.Context) {
 	}
 	db.Create(&newUser)
 	log.Println(name,password,telephone)
-	c.JSON(http.StatusOK,gin.H{
-		"code":200,
-		"massage":"Register Successful",
-	})
+	//c.JSON(http.StatusOK,gin.H{
+	//	"code":200,
+	//	"massage":"Register Successful",
+	//})
+	response.Success(c,nil,"Register Successful")
 }
 func isTelephoneExist(db *gorm.DB,telephone string) bool {
 	var user model.User_info
@@ -131,6 +144,6 @@ func Info(c *gin.Context)  {
 	user , _ := c.Get("user")
 	c.JSON(http.StatusOK,gin.H{
 		"code":200,
-		"data":gin.H{"user":user},
+		"data":gin.H{"user":dto.ToUserDto(user.(model.User_info))},
 	})
 }
